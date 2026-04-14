@@ -1,98 +1,84 @@
-# ==========================================
-# STREAMLIT APP - MODERN UI DESIGN
-# ==========================================
+# ==========================================================
+# 🚗 STREAMLIT APP - PRODUCTION READY
+# ==========================================================
 
 import streamlit as st
-import pickle
 import numpy as np
+import pickle
+import os
 
-# ------------------ PAGE CONFIG ------------------
-st.set_page_config(
-    page_title="Car Price Predictor",
-    page_icon="🚗",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ==========================================================
+# CONFIG
+# ==========================================================
 
-# ------------------ CUSTOM CSS ------------------
-st.markdown("""
-<style>
-.main {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: white;
-}
-.stButton>button {
-    background: linear-gradient(90deg, #22c55e, #16a34a);
-    color: white;
-    border-radius: 10px;
-    height: 3em;
-    width: 100%;
-    font-size: 18px;
-    border: none;
-}
-.block-container {
-    padding-top: 2rem;
-}
-</style>
-""", unsafe_allow_html=True)
+MODEL_PATH = "model.pkl"
+COLUMNS_PATH = "columns.pkl"
+CURRENT_YEAR = 2025
 
-# ------------------ LOAD MODEL ------------------
-model = pickle.load(open("model.pkl", "rb"))
+st.set_page_config(page_title="Car Price Predictor", layout="wide")
 
-# ------------------ HEADER ------------------
-st.markdown("""
-<h1 style='text-align: center; color: #22c55e;'>🚗 Car Price Predictor</h1>
-<p style='text-align: center; font-size:18px;'>Get an instant AI-powered estimate of your car's selling price</p>
-""", unsafe_allow_html=True)
+# ==========================================================
+# LOAD MODEL
+# ==========================================================
 
-# ------------------ LAYOUT ------------------
+if not os.path.exists(MODEL_PATH) or not os.path.exists(COLUMNS_PATH):
+    st.error("❌ Model files not found! Run train_model.py first.")
+    st.stop()
+
+model = pickle.load(open(MODEL_PATH, "rb"))
+columns = pickle.load(open(COLUMNS_PATH, "rb"))
+
+# ==========================================================
+# UI DESIGN
+# ==========================================================
+
+st.title("🚗 Car Price Prediction System")
+st.markdown("### Predict your car's selling price instantly")
+
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("📊 Car Details")
-
-    present_price = st.number_input("💰 Showroom Price (Lakhs)", min_value=0.0)
-    km_driven = st.number_input("🛣️ Kilometers Driven", min_value=0)
-    year = st.number_input("📅 Year of Purchase", min_value=2000, max_value=2025)
-    owners = st.selectbox("👤 Number of Owners", [0, 1, 2, 3])
+    present_price = st.number_input("💰 Showroom Price (Lakhs)", 0.0)
+    kms_driven = st.number_input("🛣️ Kilometers Driven", 0)
+    year = st.number_input("📅 Year", 2000, 2025)
+    owner = st.selectbox("👤 Owners", [0,1,2,3])
 
 with col2:
-    st.subheader("⚙️ Specifications")
+    fuel = st.selectbox("⛽ Fuel Type", ["Petrol","Diesel"])
+    seller = st.selectbox("🏢 Seller Type", ["Dealer","Individual"])
+    transmission = st.selectbox("⚙️ Transmission", ["Manual","Automatic"])
 
-    fuel = st.selectbox("⛽ Fuel Type", ["Petrol", "Diesel"])
-    seller = st.selectbox("🏢 Seller Type", ["Dealer", "Individual"])
-    transmission = st.selectbox("⚙️ Transmission", ["Manual", "Automatic"])
+# ==========================================================
+# FEATURE PROCESSING
+# ==========================================================
 
-# ------------------ FEATURE ENGINEERING ------------------
-car_age = 2025 - year
-fuel_diesel = 1 if fuel == "Diesel" else 0
-seller_individual = 1 if seller == "Individual" else 0
-transmission_manual = 1 if transmission == "Manual" else 0
+car_age = CURRENT_YEAR - year
 
-input_data = np.array([
-    present_price,
-    km_driven,
-    owners,
-    car_age,
-    fuel_diesel,
-    seller_individual,
-    transmission_manual
-]).reshape(1, -1)
+input_dict = {
+    "Present_Price": present_price,
+    "Kms_Driven": kms_driven,
+    "Owner": owner,
+    "Car_Age": car_age,
+    "Fuel_Type_Diesel": 1 if fuel=="Diesel" else 0,
+    "Seller_Type_Individual": 1 if seller=="Individual" else 0,
+    "Transmission_Manual": 1 if transmission=="Manual" else 0
+}
 
-# ------------------ PREDICTION BUTTON ------------------
+# Convert to dataframe
+input_df = pd.DataFrame([input_dict])
+
+# Align columns
+for col in columns:
+    if col not in input_df.columns:
+        input_df[col] = 0
+
+input_df = input_df[columns]
+
+# ==========================================================
+# PREDICTION
+# ==========================================================
+
 if st.button("🚀 Predict Price"):
-    prediction = model.predict(input_data)
-    price = round(prediction[0], 2)
+    prediction = model.predict(input_df)[0]
 
-    st.markdown(f"""
-    <div style='background: #1e293b; padding: 20px; border-radius: 12px; text-align:center;'>
-        <h2 style='color:#22c55e;'>Estimated Price</h2>
-        <h1 style='color:white;'>₹ {price} Lakhs</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ------------------ FOOTER ------------------
-st.markdown("""
-<hr>
-<p style='text-align:center;'>Built with ❤️ using Streamlit</p>
-""", unsafe_allow_html=True)
+    st.success(f"💰 Estimated Price: ₹ {round(prediction,2)} Lakhs")

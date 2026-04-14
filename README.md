@@ -1,40 +1,57 @@
-# 🚗 Car Price Prediction Web App
+# 🚗 Car Price Prediction System
 
-A Machine Learning-based web application that predicts the **selling price of a car** based on various features like fuel type, years of usage, showroom price, transmission type, and more.
+An end-to-end Machine Learning project that predicts the **selling price of a car** based on various features such as fuel type, years of service, showroom price, kilometers driven, ownership, seller type, and transmission.
 
-Built using **Python, Scikit-learn, and Streamlit**.
-
----
-
-## 📌 Features
-
-- Predict car selling price instantly
-- Clean and modern UI (Streamlit)
-- Uses real-world car dataset
-- Machine Learning model (Random Forest)
-- Easy to deploy on Streamlit Cloud
+Built using **Python, Scikit-learn, and Streamlit**, this project demonstrates a complete ML pipeline from training to deployment.
 
 ---
 
-## 🧠 Machine Learning Model
+## 🎯 Project Objective
+
+To develop a system that helps users estimate the **approximate resale value of a car**, enabling better decision-making for sellers and buyers.
+
+---
+
+## 🧠 Machine Learning Approach
 
 - Algorithm: **Random Forest Regressor**
-- Evaluation Metrics:
-  - R² Score
-  - Mean Absolute Error (MAE)
+- Dataset: Car dataset (`car_data.csv`)
+- Target Variable: `Selling_Price`
+
+### 📊 Evaluation Metrics:
+- R² Score
+- Mean Absolute Error (MAE)
 
 ---
 
-## 📊 Input Features
+## 📊 Features Used
 
 - Present Price (Showroom Price)
 - Kilometers Driven
-- Year of Purchase
-- Number of Owners
-- Fuel Type (Petrol/Diesel)
-- Seller Type (Dealer/Individual)
-- Transmission (Manual/Automatic)
+- Year of Purchase → Converted to Car Age
+- Number of Previous Owners
+- Fuel Type (Petrol / Diesel)
+- Seller Type (Dealer / Individual)
+- Transmission (Manual / Automatic)
+
+---
+
+## ⚙️ Tech Stack
+
+- **Python**
+- **Pandas & NumPy**
+- **Scikit-learn**
+- **Streamlit**
 
 ---
 
 ## 📁 Project Structure
+car-price-prediction/
+│
+├── app.py # Streamlit Web App
+├── train_model.py # Model Training Script
+├── model.pkl # Trained Model
+├── columns.pkl # Feature Columns (important)
+├── car_data.csv # Dataset
+├── requirements.txt # Dependencies
+└── README.md

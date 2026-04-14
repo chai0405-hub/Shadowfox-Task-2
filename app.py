@@ -1,95 +1,98 @@
+# ==========================================
+# STREAMLIT APP - MODERN UI DESIGN
+# ==========================================
+
 import streamlit as st
+import pickle
 import numpy as np
-import joblib
-import datetime
 
-# =========================
-# CONFIG
-# =========================
-st.set_page_config(page_title="Car Price Predictor", layout="wide")
+# ------------------ PAGE CONFIG ------------------
+st.set_page_config(
+    page_title="Car Price Predictor",
+    page_icon="🚗",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# =========================
-# LOAD MODEL
-# =========================
-@st.cache_resource
-def load_model():
-    model = joblib.load("model.pkl")
-    scaler = joblib.load("scaler.pkl")
-    return model, scaler
+# ------------------ CUSTOM CSS ------------------
+st.markdown("""
+<style>
+.main {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+}
+.stButton>button {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    color: white;
+    border-radius: 10px;
+    height: 3em;
+    width: 100%;
+    font-size: 18px;
+    border: none;
+}
+.block-container {
+    padding-top: 2rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-model, scaler = load_model()
+# ------------------ LOAD MODEL ------------------
+model = pickle.load(open("model.pkl", "rb"))
 
-# =========================
-# TITLE
-# =========================
-st.title("🚗 Car Price Prediction System")
-st.write("Predict the selling price of your car using ML")
+# ------------------ HEADER ------------------
+st.markdown("""
+<h1 style='text-align: center; color: #22c55e;'>🚗 Car Price Predictor</h1>
+<p style='text-align: center; font-size:18px;'>Get an instant AI-powered estimate of your car's selling price</p>
+""", unsafe_allow_html=True)
 
-# =========================
-# SIDEBAR INPUT
-# =========================
-st.sidebar.header("Enter Car Details")
-
-year = st.sidebar.slider("Year of Purchase", 2000, 2024, 2015)
-present_price = st.sidebar.slider("Present Price (Lakhs)", 0.0, 20.0, 5.0)
-kms = st.sidebar.slider("Kms Driven", 0, 200000, 30000)
-
-fuel = st.sidebar.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
-seller = st.sidebar.selectbox("Seller Type", ["Dealer", "Individual"])
-trans = st.sidebar.selectbox("Transmission", ["Manual", "Automatic"])
-
-owner = st.sidebar.slider("Number of Owners", 0, 3, 0)
-
-# =========================
-# ENCODING
-# =========================
-fuel_map = {"Petrol": 0, "Diesel": 1, "CNG": 2}
-seller_map = {"Dealer": 0, "Individual": 1}
-trans_map = {"Manual": 0, "Automatic": 1}
-
-fuel = fuel_map[fuel]
-seller = seller_map[seller]
-trans = trans_map[trans]
-
-# =========================
-# FEATURE ENGINEERING
-# =========================
-current_year = datetime.datetime.now().year
-age = current_year - year
-
-price_per_km = present_price / (kms + 1)
-age_price_ratio = age / (present_price + 1)
-
-# =========================
-# INPUT ARRAY
-# =========================
-features = np.array([[present_price, kms, fuel, seller, trans, owner, age, price_per_km, age_price_ratio]])
-
-scaled = scaler.transform(features)
-
-# =========================
-# PREDICTION
-# =========================
-prediction = model.predict(scaled)[0]
-
-# =========================
-# OUTPUT
-# =========================
-st.subheader("💰 Predicted Selling Price")
-
+# ------------------ LAYOUT ------------------
 col1, col2 = st.columns(2)
 
 with col1:
-    st.metric("Price", f"₹ {prediction:.2f} Lakhs")
+    st.subheader("📊 Car Details")
+
+    present_price = st.number_input("💰 Showroom Price (Lakhs)", min_value=0.0)
+    km_driven = st.number_input("🛣️ Kilometers Driven", min_value=0)
+    year = st.number_input("📅 Year of Purchase", min_value=2000, max_value=2025)
+    owners = st.selectbox("👤 Number of Owners", [0, 1, 2, 3])
 
 with col2:
-    if prediction > present_price:
-        st.success("Good Resale Value 🚀")
-    else:
-        st.warning("Depreciated Value ⚠️")
+    st.subheader("⚙️ Specifications")
 
-# =========================
-# INFO
-# =========================
-st.markdown("---")
-st.info("Python 3.14 Compatible | No Pillow Used")
+    fuel = st.selectbox("⛽ Fuel Type", ["Petrol", "Diesel"])
+    seller = st.selectbox("🏢 Seller Type", ["Dealer", "Individual"])
+    transmission = st.selectbox("⚙️ Transmission", ["Manual", "Automatic"])
+
+# ------------------ FEATURE ENGINEERING ------------------
+car_age = 2025 - year
+fuel_diesel = 1 if fuel == "Diesel" else 0
+seller_individual = 1 if seller == "Individual" else 0
+transmission_manual = 1 if transmission == "Manual" else 0
+
+input_data = np.array([
+    present_price,
+    km_driven,
+    owners,
+    car_age,
+    fuel_diesel,
+    seller_individual,
+    transmission_manual
+]).reshape(1, -1)
+
+# ------------------ PREDICTION BUTTON ------------------
+if st.button("🚀 Predict Price"):
+    prediction = model.predict(input_data)
+    price = round(prediction[0], 2)
+
+    st.markdown(f"""
+    <div style='background: #1e293b; padding: 20px; border-radius: 12px; text-align:center;'>
+        <h2 style='color:#22c55e;'>Estimated Price</h2>
+        <h1 style='color:white;'>₹ {price} Lakhs</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ------------------ FOOTER ------------------
+st.markdown("""
+<hr>
+<p style='text-align:center;'>Built with ❤️ using Streamlit</p>
+""", unsafe_allow_html=True)

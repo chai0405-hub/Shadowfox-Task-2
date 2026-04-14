@@ -1,94 +1,95 @@
-# =========================================
-# STREAMLIT APP - CAR PRICE PREDICTION
-# =========================================
-
 import streamlit as st
 import numpy as np
-import pickle
+import joblib
+import datetime
 
-# =========================================
-# LOAD FILES
-# =========================================
+# =========================
+# CONFIG
+# =========================
+st.set_page_config(page_title="Car Price Predictor", layout="wide")
 
-model = pickle.load(open("model.pkl", "rb"))
-scaler = pickle.load(open("scaler.pkl", "rb"))
-encoders = pickle.load(open("encoders.pkl", "rb"))
+# =========================
+# LOAD MODEL
+# =========================
+@st.cache_resource
+def load_model():
+    model = joblib.load("model.pkl")
+    scaler = joblib.load("scaler.pkl")
+    return model, scaler
 
-# =========================================
-# PAGE CONFIG
-# =========================================
+model, scaler = load_model()
 
-st.set_page_config(
-    page_title="Car Price Predictor",
-    page_icon="🚗",
-    layout="centered"
-)
+# =========================
+# TITLE
+# =========================
+st.title("🚗 Car Price Prediction System")
+st.write("Predict the selling price of your car using ML")
 
-# =========================================
-# HEADER
-# =========================================
+# =========================
+# SIDEBAR INPUT
+# =========================
+st.sidebar.header("Enter Car Details")
 
-st.title("🚗 Car Selling Price Prediction")
-st.markdown("### Predict the resale value of your car using Machine Learning")
+year = st.sidebar.slider("Year of Purchase", 2000, 2024, 2015)
+present_price = st.sidebar.slider("Present Price (Lakhs)", 0.0, 20.0, 5.0)
+kms = st.sidebar.slider("Kms Driven", 0, 200000, 30000)
 
-st.write("---")
+fuel = st.sidebar.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
+seller = st.sidebar.selectbox("Seller Type", ["Dealer", "Individual"])
+trans = st.sidebar.selectbox("Transmission", ["Manual", "Automatic"])
 
-# =========================================
-# USER INPUT SECTION
-# =========================================
+owner = st.sidebar.slider("Number of Owners", 0, 3, 0)
 
-st.subheader("Enter Car Details")
+# =========================
+# ENCODING
+# =========================
+fuel_map = {"Petrol": 0, "Diesel": 1, "CNG": 2}
+seller_map = {"Dealer": 0, "Individual": 1}
+trans_map = {"Manual": 0, "Automatic": 1}
 
-present_price = st.number_input("💰 Showroom Price (Lakhs)", min_value=0.0)
+fuel = fuel_map[fuel]
+seller = seller_map[seller]
+trans = trans_map[trans]
 
-kms_driven = st.number_input("📍 Kilometers Driven", min_value=0)
+# =========================
+# FEATURE ENGINEERING
+# =========================
+current_year = datetime.datetime.now().year
+age = current_year - year
 
-owner = st.selectbox("👤 Number of Previous Owners", [0, 1, 2, 3])
+price_per_km = present_price / (kms + 1)
+age_price_ratio = age / (present_price + 1)
 
-fuel_type = st.selectbox("⛽ Fuel Type", ["Petrol", "Diesel", "CNG"])
+# =========================
+# INPUT ARRAY
+# =========================
+features = np.array([[present_price, kms, fuel, seller, trans, owner, age, price_per_km, age_price_ratio]])
 
-seller_type = st.selectbox("🏪 Seller Type", ["Dealer", "Individual"])
+scaled = scaler.transform(features)
 
-transmission = st.selectbox("⚙️ Transmission", ["Manual", "Automatic"])
+# =========================
+# PREDICTION
+# =========================
+prediction = model.predict(scaled)[0]
 
-year = st.slider("📅 Year of Purchase", 2000, 2024, 2018)
+# =========================
+# OUTPUT
+# =========================
+st.subheader("💰 Predicted Selling Price")
 
-# =========================================
-# PREPROCESS INPUT
-# =========================================
+col1, col2 = st.columns(2)
 
-car_age = 2024 - year
+with col1:
+    st.metric("Price", f"₹ {prediction:.2f} Lakhs")
 
-fuel_encoded = encoders["fuel"].transform([fuel_type])[0]
-seller_encoded = encoders["seller"].transform([seller_type])[0]
-trans_encoded = encoders["trans"].transform([transmission])[0]
+with col2:
+    if prediction > present_price:
+        st.success("Good Resale Value 🚀")
+    else:
+        st.warning("Depreciated Value ⚠️")
 
-input_data = np.array([[
-    present_price,
-    kms_driven,
-    owner,
-    fuel_encoded,
-    seller_encoded,
-    trans_encoded,
-    car_age
-]])
-
-# Scale input
-input_scaled = scaler.transform(input_data)
-
-# =========================================
-# PREDICTION BUTTON
-# =========================================
-
-if st.button("🔮 Predict Price"):
-
-    prediction = model.predict(input_scaled)
-
-    st.success(f"💵 Estimated Selling Price: ₹ {round(prediction[0], 2)} Lakhs")
-
-# =========================================
-# FOOTER
-# =========================================
-
-st.write("---")
-st.caption("Built with ❤️ using Streamlit & Machine Learning")
+# =========================
+# INFO
+# =========================
+st.markdown("---")
+st.info("Python 3.14 Compatible | No Pillow Used")

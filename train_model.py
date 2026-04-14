@@ -1,158 +1,147 @@
-# =========================================
-# CAR PRICE PREDICTION - MODEL TRAINING
-# =========================================
+# ==========================================
+# CAR PRICE PREDICTION - TRAINING SCRIPT
+# ==========================================
 
 import pandas as pd
 import numpy as np
 import pickle
-import warnings
-
-warnings.filterwarnings("ignore")
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import r2_score, mean_absolute_error
 
-# =========================================
-# LOAD DATASET
-# =========================================
+# ==========================================
+# LOAD DATA
+# ==========================================
 
-print("📂 Loading dataset...")
-df = pd.read_csv("car_data.csv")
+def load_data():
+    print("📂 Loading dataset...")
+    df = pd.read_csv("car_data.csv")
+    print("✅ Dataset Loaded Successfully")
+    print("Shape:", df.shape)
+    print(df.head())
+    return df
 
-print("✅ Dataset Loaded Successfully")
-print("Shape:", df.shape)
-print(df.head())
 
-# =========================================
-# BASIC CLEANING
-# =========================================
+# ==========================================
+# PREPROCESSING
+# ==========================================
 
-# Remove duplicates
-df.drop_duplicates(inplace=True)
+def preprocess_data(df):
+    print("\n🔧 Preprocessing data...")
 
-# Handle missing values
-df.dropna(inplace=True)
+    # Drop unnecessary column
+    if 'Car_Name' in df.columns:
+        df.drop(['Car_Name'], axis=1, inplace=True)
 
-# =========================================
-# FEATURE ENGINEERING
-# =========================================
+    # Feature Engineering: Car Age
+    if 'Year' in df.columns:
+        df['Car_Age'] = 2025 - df['Year']
+        df.drop(['Year'], axis=1, inplace=True)
 
-# Remove car name if exists
-if 'Car_Name' in df.columns:
-    df.drop(['Car_Name'], axis=1, inplace=True)
+    # Convert categorical variables
+    df = pd.get_dummies(df, drop_first=True)
 
-# Create Car Age
-current_year = 2024
-df['Car_Age'] = current_year - df['Year']
-df.drop(['Year'], axis=1, inplace=True)
+    print("✅ Preprocessing Completed")
+    print("Columns after encoding:", df.columns.tolist())
 
-# =========================================
-# ENCODING CATEGORICAL VARIABLES
-# =========================================
+    return df
 
-le_fuel = LabelEncoder()
-le_seller = LabelEncoder()
-le_trans = LabelEncoder()
 
-df['Fuel_Type'] = le_fuel.fit_transform(df['Fuel_Type'])
-df['Seller_Type'] = le_seller.fit_transform(df['Seller_Type'])
-df['Transmission'] = le_trans.fit_transform(df['Transmission'])
+# ==========================================
+# SPLIT DATA
+# ==========================================
 
-# Save encoders
-encoders = {
-    "fuel": le_fuel,
-    "seller": le_seller,
-    "trans": le_trans
-}
+def split_data(df):
+    print("\n📊 Splitting dataset...")
 
-# =========================================
-# DEFINE FEATURES & TARGET
-# =========================================
+    X = df.drop(['Selling_Price'], axis=1)
+    y = df['Selling_Price']
 
-X = df.drop('Selling_Price', axis=1)
-y = df['Selling_Price']
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
-print("📊 Features:", X.columns.tolist())
+    print("Training samples:", X_train.shape[0])
+    print("Testing samples:", X_test.shape[0])
 
-# =========================================
-# FEATURE SCALING
-# =========================================
+    return X_train, X_test, y_train, y_test
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
 
-# =========================================
-# TRAIN TEST SPLIT
-# =========================================
+# ==========================================
+# TRAIN MODEL
+# ==========================================
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled,
-    y,
-    test_size=0.2,
-    random_state=42
-)
+def train_model(X_train, y_train):
+    print("\n🤖 Training model...")
 
-print("Training samples:", len(X_train))
-print("Testing samples:", len(X_test))
+    model = RandomForestRegressor(
+        n_estimators=300,
+        max_depth=None,
+        min_samples_split=2,
+        random_state=42
+    )
 
-# =========================================
-# MODEL TRAINING
-# =========================================
+    model.fit(X_train, y_train)
 
-print("🚀 Training Random Forest Model...")
+    print("✅ Model Training Completed")
+    return model
 
-model = RandomForestRegressor(
-    n_estimators=300,
-    max_depth=12,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    random_state=42
-)
 
-model.fit(X_train, y_train)
+# ==========================================
+# EVALUATE MODEL
+# ==========================================
 
-# =========================================
-# MODEL EVALUATION
-# =========================================
+def evaluate_model(model, X_test, y_test):
+    print("\n📈 Evaluating model...")
 
-y_pred = model.predict(X_test)
+    predictions = model.predict(X_test)
 
-mse = mean_squared_error(y_test, y_pred)
-rmse = np.sqrt(mse)
-r2 = r2_score(y_test, y_pred)
+    r2 = r2_score(y_test, predictions)
+    mae = mean_absolute_error(y_test, predictions)
 
-print("\n📈 MODEL PERFORMANCE")
-print("MSE :", mse)
-print("RMSE:", rmse)
-print("R2 Score:", r2)
+    print(f"🔹 R2 Score: {round(r2, 3)}")
+    print(f"🔹 Mean Absolute Error: {round(mae, 3)}")
 
-# =========================================
-# FEATURE IMPORTANCE
-# =========================================
 
-importance = model.feature_importances_
-for i, col in enumerate(X.columns):
-    print(f"{col}: {importance[i]:.4f}")
+# ==========================================
+# SAVE MODEL
+# ==========================================
 
-# =========================================
-# SAVE MODEL FILES
-# =========================================
+def save_model(model):
+    print("\n💾 Saving model...")
 
-print("\n💾 Saving model files...")
+    with open("model.pkl", "wb") as f:
+        pickle.dump(model, f)
 
-pickle.dump(model, open("model.pkl", "wb"))
-pickle.dump(scaler, open("scaler.pkl", "wb"))
-pickle.dump(encoders, open("encoders.pkl", "wb"))
+    print("✅ Model saved as model.pkl")
 
-print("✅ All files saved successfully!")
 
-# =========================================
-# TEST SAMPLE PREDICTION
-# =========================================
+# ==========================================
+# MAIN FUNCTION
+# ==========================================
 
-sample = X_test[0].reshape(1, -1)
-prediction = model.predict(sample)
+def main():
+    print("🚗 CAR PRICE PREDICTION TRAINING STARTED\n")
 
-print("\n🔍 Sample Prediction:", prediction[0])
+    df = load_data()
+
+    df = preprocess_data(df)
+
+    X_train, X_test, y_train, y_test = split_data(df)
+
+    model = train_model(X_train, y_train)
+
+    evaluate_model(model, X_test, y_test)
+
+    save_model(model)
+
+    print("\n🎉 Training Completed Successfully!")
+
+
+# ==========================================
+# RUN SCRIPT
+# ==========================================
+
+if __name__ == "__main__":
+    main()

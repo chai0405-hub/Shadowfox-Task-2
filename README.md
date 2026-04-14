@@ -1,24 +1,27 @@
-# 🚗 Car Price Prediction System
+# 🚗 Car Price Prediction & Analytics Dashboard
 
-An end-to-end Machine Learning project that predicts the **selling price of a car** based on various features such as fuel type, years of service, showroom price, kilometers driven, ownership, seller type, and transmission.
+An end-to-end Machine Learning project that predicts the **selling price of a car** and provides **interactive data analysis dashboards**.
 
-Built using **Python, Scikit-learn, and Streamlit**, this project demonstrates a complete ML pipeline from training to deployment.
+Built using **Python, Scikit-learn, Streamlit, and Matplotlib**, this project demonstrates a complete ML pipeline from training to deployment with visualization.
 
 ---
 
 ## 🎯 Project Objective
 
-To develop a system that helps users estimate the **approximate resale value of a car**, enabling better decision-making for sellers and buyers.
+To develop a smart system that:
+- Predicts **car resale value**
+- Provides **data-driven insights**
+- Helps users make better selling/buying decisions
 
 ---
 
-## 🧠 Machine Learning Approach
+## 🧠 Machine Learning Model
 
 - Algorithm: **Random Forest Regressor**
-- Dataset: Car dataset (`car_data.csv`)
+- Dataset: `car_data.csv`
 - Target Variable: `Selling_Price`
 
-### 📊 Evaluation Metrics:
+### 📊 Evaluation Metrics
 - R² Score
 - Mean Absolute Error (MAE)
 
@@ -26,13 +29,24 @@ To develop a system that helps users estimate the **approximate resale value of 
 
 ## 📊 Features Used
 
-- Present Price (Showroom Price)
-- Kilometers Driven
-- Year of Purchase → Converted to Car Age
-- Number of Previous Owners
-- Fuel Type (Petrol / Diesel)
-- Seller Type (Dealer / Individual)
-- Transmission (Manual / Automatic)
+- 💰 Present Price (Showroom Price)
+- 🛣️ Kilometers Driven
+- 📅 Year of Purchase → Converted to Car Age
+- 👤 Number of Previous Owners
+- ⛽ Fuel Type (Petrol / Diesel)
+- 🏢 Seller Type (Dealer / Individual)
+- ⚙️ Transmission (Manual / Automatic)
+
+---
+
+## 📈 Dashboard Features
+
+The app includes an **interactive analytics dashboard**:
+
+- 📉 Selling Price Distribution (Histogram)
+- ⛽ Fuel Type Analysis
+- 📅 Car Age vs Price (Scatter Plot)
+- 👤 Ownership Impact on Price
 
 ---
 
@@ -42,6 +56,7 @@ To develop a system that helps users estimate the **approximate resale value of 
 - **Pandas & NumPy**
 - **Scikit-learn**
 - **Streamlit**
+- **Matplotlib**
 
 ---
 

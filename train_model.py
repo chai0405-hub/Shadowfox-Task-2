@@ -1,76 +1,105 @@
-# ==========================================
-# CAR PRICE PREDICTION - TRAINING SCRIPT
-# ==========================================
+# ==========================================================
+# 🚗 CAR PRICE PREDICTION - ADVANCED TRAINING PIPELINE
+# ==========================================================
 
 import pandas as pd
 import numpy as np
 import pickle
+import os
+import warnings
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score, mean_absolute_error
 
-# ==========================================
-# LOAD DATA
-# ==========================================
+warnings.filterwarnings("ignore")
+
+# ==========================================================
+# 📂 CONFIG
+# ==========================================================
+
+DATA_PATH = "car_data.csv"
+MODEL_PATH = "model.pkl"
+COLUMNS_PATH = "columns.pkl"
+
+CURRENT_YEAR = 2025
+
+# ==========================================================
+# 🔍 LOAD DATA
+# ==========================================================
 
 def load_data():
-    print("📂 Loading dataset...")
-    df = pd.read_csv("car_data.csv")
+    print("\n📂 Loading dataset...")
+
+    if not os.path.exists(DATA_PATH):
+        raise FileNotFoundError("❌ car_data.csv not found!")
+
+    df = pd.read_csv(DATA_PATH)
+
     print("✅ Dataset Loaded Successfully")
     print("Shape:", df.shape)
-    print(df.head())
+    print("\nColumns:", df.columns.tolist())
+
     return df
 
-
-# ==========================================
-# PREPROCESSING
-# ==========================================
+# ==========================================================
+# 🔧 PREPROCESSING
+# ==========================================================
 
 def preprocess_data(df):
-    print("\n🔧 Preprocessing data...")
+    print("\n🔧 Starting preprocessing...")
+
+    df.columns = df.columns.str.strip()
 
     # Drop unnecessary column
-    if 'Car_Name' in df.columns:
-        df.drop(['Car_Name'], axis=1, inplace=True)
+    if "Car_Name" in df.columns:
+        df.drop("Car_Name", axis=1, inplace=True)
+        print("✔ Dropped Car_Name")
 
-    # Feature Engineering: Car Age
-    if 'Year' in df.columns:
-        df['Car_Age'] = 2025 - df['Year']
-        df.drop(['Year'], axis=1, inplace=True)
+    # Feature Engineering
+    if "Year" in df.columns:
+        df["Car_Age"] = CURRENT_YEAR - df["Year"]
+        df.drop("Year", axis=1, inplace=True)
+        print("✔ Created Car_Age")
 
-    # Convert categorical variables
+    # Check required columns
+    required_cols = [
+        "Selling_Price",
+        "Present_Price",
+        "Kms_Driven",
+        "Fuel_Type",
+        "Seller_Type",
+        "Transmission",
+        "Owner"
+    ]
+
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"❌ Missing column: {col}")
+
+    # Encoding categorical
     df = pd.get_dummies(df, drop_first=True)
 
-    print("✅ Preprocessing Completed")
-    print("Columns after encoding:", df.columns.tolist())
+    print("✔ Encoding done")
+    print("Final columns:", df.columns.tolist())
 
     return df
 
-
-# ==========================================
-# SPLIT DATA
-# ==========================================
+# ==========================================================
+# 📊 SPLIT DATA
+# ==========================================================
 
 def split_data(df):
     print("\n📊 Splitting dataset...")
 
-    X = df.drop(['Selling_Price'], axis=1)
-    y = df['Selling_Price']
+    X = df.drop("Selling_Price", axis=1)
+    y = df["Selling_Price"]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    return train_test_split(X, y, test_size=0.2, random_state=42), X.columns
 
-    print("Training samples:", X_train.shape[0])
-    print("Testing samples:", X_test.shape[0])
-
-    return X_train, X_test, y_train, y_test
-
-
-# ==========================================
-# TRAIN MODEL
-# ==========================================
+# ==========================================================
+# 🤖 TRAIN MODEL
+# ==========================================================
 
 def train_model(X_train, y_train):
     print("\n🤖 Training model...")
@@ -78,70 +107,68 @@ def train_model(X_train, y_train):
     model = RandomForestRegressor(
         n_estimators=300,
         max_depth=None,
-        min_samples_split=2,
         random_state=42
     )
 
     model.fit(X_train, y_train)
 
-    print("✅ Model Training Completed")
+    print("✔ Model trained successfully")
     return model
 
-
-# ==========================================
-# EVALUATE MODEL
-# ==========================================
+# ==========================================================
+# 📈 EVALUATION
+# ==========================================================
 
 def evaluate_model(model, X_test, y_test):
     print("\n📈 Evaluating model...")
 
-    predictions = model.predict(X_test)
+    preds = model.predict(X_test)
 
-    r2 = r2_score(y_test, predictions)
-    mae = mean_absolute_error(y_test, predictions)
+    r2 = r2_score(y_test, preds)
+    mae = mean_absolute_error(y_test, preds)
 
-    print(f"🔹 R2 Score: {round(r2, 3)}")
-    print(f"🔹 Mean Absolute Error: {round(mae, 3)}")
+    print(f"R2 Score: {round(r2,3)}")
+    print(f"MAE: {round(mae,3)}")
 
+# ==========================================================
+# 💾 SAVE ARTIFACTS
+# ==========================================================
 
-# ==========================================
-# SAVE MODEL
-# ==========================================
+def save_artifacts(model, columns):
+    print("\n💾 Saving model and columns...")
 
-def save_model(model):
-    print("\n💾 Saving model...")
-
-    with open("model.pkl", "wb") as f:
+    with open(MODEL_PATH, "wb") as f:
         pickle.dump(model, f)
 
-    print("✅ Model saved as model.pkl")
+    with open(COLUMNS_PATH, "wb") as f:
+        pickle.dump(columns, f)
 
+    print("✔ model.pkl saved")
+    print("✔ columns.pkl saved")
 
-# ==========================================
-# MAIN FUNCTION
-# ==========================================
+# ==========================================================
+# 🚀 MAIN
+# ==========================================================
 
 def main():
-    print("🚗 CAR PRICE PREDICTION TRAINING STARTED\n")
+    print("\n🚗 CAR PRICE MODEL TRAINING STARTED\n")
 
     df = load_data()
-
     df = preprocess_data(df)
 
-    X_train, X_test, y_train, y_test = split_data(df)
+    (X_train, X_test, y_train, y_test), columns = split_data(df)
 
     model = train_model(X_train, y_train)
 
     evaluate_model(model, X_test, y_test)
 
-    save_model(model)
+    save_artifacts(model, columns)
 
-    print("\n🎉 Training Completed Successfully!")
+    print("\n🎉 TRAINING COMPLETE!")
 
-
-# ==========================================
-# RUN SCRIPT
-# ==========================================
+# ==========================================================
+# ▶ RUN
+# ==========================================================
 
 if __name__ == "__main__":
     main()

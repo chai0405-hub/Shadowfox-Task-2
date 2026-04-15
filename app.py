@@ -1,5 +1,5 @@
 # ============================================
-# CAR PRICE PREDICTION - PREMIUM DASHBOARD
+# CAR PRICE PREDICTION - NEXT LEVEL DASHBOARD
 # ============================================
 
 import streamlit as st
@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 # ============================================
-# PAGE CONFIG
+# PAGE CONFIG (DARK THEME)
 # ============================================
 
 st.set_page_config(
@@ -32,26 +32,42 @@ if not os.path.exists(MODEL_PATH):
 model = pickle.load(open(MODEL_PATH, "rb"))
 
 # ============================================
+# CUSTOM DARK STYLE
+# ============================================
+
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+    color: white;
+}
+.stApp {
+    background-color: #0e1117;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # HEADER
 # ============================================
 
 st.markdown("""
-# 🚗 Car Price Prediction Dashboard
-### Smart ML-powered resale value estimator
+# 🚗 Car Price Prediction
+### AI-powered resale value estimator
 """)
 
 st.markdown("---")
 
 # ============================================
-# SIDEBAR INPUTS
+# SIDEBAR INPUT
 # ============================================
 
-st.sidebar.header("Enter Car Details")
+st.sidebar.header("Car Details")
 
 present_price = st.sidebar.number_input("Showroom Price (Lakhs)", 0.0, 50.0, 5.0)
 kms_driven = st.sidebar.number_input("Kilometers Driven", 0, 500000, 30000)
 owners = st.sidebar.selectbox("Owners", [0, 1, 2, 3])
-car_age = st.sidebar.slider("Car Age (Years)", 0, 20, 5)
+car_age = st.sidebar.slider("Car Age", 0, 20, 5)
 
 fuel = st.sidebar.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
 seller = st.sidebar.selectbox("Seller Type", ["Dealer", "Individual"])
@@ -70,27 +86,27 @@ seller = seller_map[seller]
 transmission = trans_map[transmission]
 
 # ============================================
-# PREDICTION SECTION
+# PREDICTION + CONFIDENCE
 # ============================================
 
 st.subheader("Prediction")
 
-col1, col2 = st.columns([2, 1])
+if st.button("Predict Price"):
 
-with col1:
-    if st.button("Predict Price"):
-        input_data = np.array([[present_price, kms_driven, owners,
-                                fuel, seller, transmission, car_age]])
+    input_data = np.array([[present_price, kms_driven, owners,
+                            fuel, seller, transmission, car_age]])
 
-        prediction = model.predict(input_data)[0]
+    prediction = model.predict(input_data)[0]
 
-        st.success(f"Estimated Selling Price: ₹ {prediction:.2f} Lakhs")
+    # Confidence (approx using tree variance)
+    preds = np.array([tree.predict(input_data)[0] for tree in model.estimators_])
+    confidence = 100 - (np.std(preds) * 10)
 
-with col2:
-    st.info("Tip: Lower mileage & newer cars get better prices")
+    st.success(f"Estimated Price: ₹ {prediction:.2f} Lakhs")
+    st.info(f"Model Confidence: {confidence:.2f}%")
 
 # ============================================
-# DATA VISUALIZATION
+# DATA VISUALIZATION (PLOTLY)
 # ============================================
 
 st.markdown("---")
@@ -99,44 +115,46 @@ st.subheader("Market Insights")
 DATA_PATH = "car_data.csv"
 
 if os.path.exists(DATA_PATH):
+
     df = pd.read_csv(DATA_PATH)
 
     col1, col2 = st.columns(2)
 
-    # Histogram (clean)
+    # Interactive histogram
     with col1:
-        st.write("Selling Price Distribution")
-        fig, ax = plt.subplots()
-        ax.hist(df["Selling_Price"])
-        ax.set_xlabel("Price (Lakhs)")
-        ax.set_ylabel("Count")
-        st.pyplot(fig)
+        fig = px.histogram(df, x="Selling_Price", title="Price Distribution")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Scatter (clean)
+    # Interactive scatter
     with col2:
-        st.write("Price vs Distance Driven")
-        fig, ax = plt.subplots()
-        ax.scatter(df["Kms_Driven"], df["Selling_Price"])
-        ax.set_xlabel("Kms Driven")
-        ax.set_ylabel("Price (Lakhs)")
-        st.pyplot(fig)
+        fig = px.scatter(df, x="Kms_Driven", y="Selling_Price",
+                         title="Price vs Distance")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Additional chart (NEW)
-    st.subheader("Fuel Type Impact")
+    # Fuel analysis
+    st.subheader("Fuel Type Analysis")
 
-    fuel_counts = df.groupby("Fuel_Type")["Selling_Price"].mean()
+    fuel_avg = df.groupby("Fuel_Type")["Selling_Price"].mean().reset_index()
 
-    fig, ax = plt.subplots()
-    fuel_counts.plot(kind="bar", ax=ax)
-    ax.set_ylabel("Avg Price")
-    st.pyplot(fig)
+    fig = px.bar(fuel_avg, x="Fuel_Type", y="Selling_Price",
+                 title="Average Price by Fuel Type")
+
+    st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.warning("Dataset not found for charts")
+    st.warning("Dataset not found")
 
 # ============================================
-# FOOTER
+# PORTFOLIO FOOTER
 # ============================================
 
 st.markdown("---")
-st.markdown("Built with Streamlit | ML Project 🚀")
+st.markdown("""
+### About This Project
+- Machine Learning model using Random Forest
+- Hyperparameter tuning applied
+- Interactive dashboard with Plotly
+- Built for real-world resale price prediction
+
+**Created by:** Your Name  
+""")

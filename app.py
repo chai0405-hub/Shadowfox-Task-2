@@ -149,12 +149,4 @@ else:
 # ============================================
 
 st.markdown("---")
-st.markdown("""
-### About This Project
-- Machine Learning model using Random Forest
-- Hyperparameter tuning applied
-- Interactive dashboard with Plotly
-- Built for real-world resale price prediction
-
-**Created by:** Your Name  
-""")
+st.markdown(""")

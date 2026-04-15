@@ -1,6 +1,5 @@
 # ============================================
-# CAR PRICE PREDICTION - FINAL WORKING CODE
-# (NO EMOJI, NO ERRORS)
+# CAR PRICE PREDICTION - FINAL PROFESSIONAL CODE
 # ============================================
 
 import pandas as pd
@@ -8,7 +7,10 @@ import numpy as np
 import os
 import pickle
 
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error, r2_score
@@ -24,7 +26,7 @@ def load_data():
 
     if not os.path.exists(file_name):
         print("ERROR: car_data.csv not found!")
-        print("Put the file in the same folder as this script")
+        print("Put the file in the SAME folder as this file")
         exit()
 
     df = pd.read_csv(file_name)
@@ -33,6 +35,34 @@ def load_data():
     print("Shape:", df.shape)
 
     return df
+
+# ============================================
+# EDA (FIXED VERSION)
+# ============================================
+
+def perform_eda(df):
+    print("\nPerforming EDA...")
+
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+
+    # Select only numeric columns
+    numeric_df = df.select_dtypes(include=[np.number])
+
+    # Histogram
+    numeric_df.hist(figsize=(12, 8))
+    plt.tight_layout()
+    plt.savefig("plots/histograms.png")
+    plt.close()
+
+    # Correlation heatmap
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm")
+    plt.title("Correlation Heatmap")
+    plt.savefig("plots/correlation.png")
+    plt.close()
+
+    print("EDA completed and saved in 'plots/' folder")
 
 # ============================================
 # PREPROCESS DATA
@@ -46,13 +76,16 @@ def preprocess_data(df):
     df.dropna(inplace=True)
     df.drop_duplicates(inplace=True)
 
+    # Feature Engineering
     df['Car_Age'] = 2025 - df['Year']
 
+    # Drop unnecessary columns
     if 'Car_Name' in df.columns:
         df.drop(['Car_Name'], axis=1, inplace=True)
 
     df.drop(['Year'], axis=1, inplace=True)
 
+    # Encode categorical columns
     le = LabelEncoder()
 
     for col in ['Fuel_Type', 'Seller_Type', 'Transmission']:
@@ -75,19 +108,36 @@ def split_data(df):
     return train_test_split(X, y, test_size=0.2, random_state=42)
 
 # ============================================
-# TRAIN MODEL
+# HYPERPARAMETER TUNING
 # ============================================
 
-def train_model(X_train, y_train):
-    print("\nTraining model...")
+def tune_model(X_train, y_train):
+    print("\nTuning model...")
 
-    model = RandomForestRegressor(n_estimators=200, random_state=42)
+    model = RandomForestRegressor()
 
-    model.fit(X_train, y_train)
+    param_dist = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [5, 10, None],
+        'min_samples_split': [2, 5],
+        'min_samples_leaf': [1, 2]
+    }
 
-    print("Model training completed")
+    random_search = RandomizedSearchCV(
+        model,
+        param_distributions=param_dist,
+        n_iter=10,
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+        random_state=42
+    )
 
-    return model
+    random_search.fit(X_train, y_train)
+
+    print("Best Parameters:", random_search.best_params_)
+
+    return random_search.best_estimator_
 
 # ============================================
 # EVALUATE MODEL
@@ -128,17 +178,19 @@ def main():
 
     df = load_data()
 
+    perform_eda(df)
+
     df = preprocess_data(df)
 
     X_train, X_test, y_train, y_test = split_data(df)
 
-    model = train_model(X_train, y_train)
+    model = tune_model(X_train, y_train)
 
     evaluate_model(model, X_test, y_test)
 
     save_model(model)
 
-    print("\nDONE! Model is ready.")
+    print("\nDONE! PROFESSIONAL MODEL READY")
 
 # ============================================
 

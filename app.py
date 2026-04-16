@@ -1,58 +1,30 @@
-# ============================================
-# STREAMLIT APP - CAR PRICE PREDICTION
-# ============================================
+from flask import Flask, request, jsonify
+from utils import load_model, preprocess_input
 
-import streamlit as st
-import numpy as np
-import pickle
+app = Flask(__name__)
 
-# ============================================
-# LOAD MODEL
-# ============================================
+model, encoders = load_model()
 
-model = pickle.load(open("model/car_model.pkl", "rb"))
+@app.route("/")
+def home():
+    return "Loan Prediction API is Running"
 
-# ============================================
-# TITLE
-# ============================================
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        data = request.get_json()
 
-st.title("🚗 Car Price Prediction App")
+        processed = preprocess_input(data, encoders)
+        prediction = model.predict(processed)[0]
 
-st.write("Enter car details to predict selling price")
+        result = "Approved" if prediction == 1 else "Rejected"
 
-# ============================================
-# USER INPUTS
-# ============================================
+        return jsonify({
+            "prediction": result
+        })
 
-present_price = st.number_input("Showroom Price (in Lakhs)", 0.0, 50.0)
-kms_driven = st.number_input("Kilometers Driven", 0, 500000)
-owners = st.selectbox("Number of Owners", [0, 1, 2, 3])
-car_age = st.slider("Car Age (Years)", 0, 20)
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
-fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
-seller = st.selectbox("Seller Type", ["Dealer", "Individual"])
-transmission = st.selectbox("Transmission", ["Manual", "Automatic"])
-
-# ============================================
-# ENCODING INPUT
-# ============================================
-
-fuel_map = {"Petrol": 0, "Diesel": 1, "CNG": 2}
-seller_map = {"Dealer": 0, "Individual": 1}
-trans_map = {"Manual": 0, "Automatic": 1}
-
-fuel = fuel_map[fuel]
-seller = seller_map[seller]
-transmission = trans_map[transmission]
-
-# ============================================
-# PREDICTION
-# ============================================
-
-if st.button("Predict Price"):
-    input_data = np.array([[present_price, kms_driven, owners,
-                            fuel, seller, transmission, car_age]])
-
-    prediction = model.predict(input_data)
-
-    st.success(f"💰 Estimated Selling Price: ₹ {prediction[0]:.2f} Lakhs")
+if __name__ == "__main__":
+    app.run(debug=True)

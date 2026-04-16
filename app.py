@@ -55,13 +55,6 @@ with col2:
 st.markdown("---")
 
 # ==============================
-# MODEL ACCURACY
-# ==============================
-st.subheader("Model Performance")
-accuracy = 0.78  # replace with your actual accuracy
-st.metric(label="Model Accuracy", value=f"{accuracy*100:.2f}%")
-
-# ==============================
 # PREDICTION
 # ==============================
 if st.button("Predict Loan Status"):
@@ -82,7 +75,7 @@ if st.button("Predict Loan Status"):
 
     df = pd.DataFrame([input_data])
 
-    # Encode
+    # Encode input
     for col in df.columns:
         if col in encoders:
             df[col] = encoders[col].transform(df[col])

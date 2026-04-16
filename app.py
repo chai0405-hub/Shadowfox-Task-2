@@ -1,30 +1,67 @@
-from flask import Flask, request, jsonify
-from utils import load_model, preprocess_input
+import streamlit as st
+import pandas as pd
+import joblib
+import os
 
-app = Flask(__name__)
+# ==============================
+# LOAD MODEL
+# ==============================
 
-model, encoders = load_model()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "model", "model.pkl")
+encoder_path = os.path.join(BASE_DIR, "model", "encoders.pkl")
 
-@app.route("/")
-def home():
-    return "Loan Prediction API is Running"
+model = joblib.load(model_path)
+encoders = joblib.load(encoder_path)
 
-@app.route("/predict", methods=["POST"])
-def predict():
-    try:
-        data = request.get_json()
+# ==============================
+# UI
+# ==============================
 
-        processed = preprocess_input(data, encoders)
-        prediction = model.predict(processed)[0]
+st.title("Loan Approval Prediction")
 
-        result = "Approved" if prediction == 1 else "Rejected"
+gender = st.selectbox("Gender", ["Male", "Female"])
+married = st.selectbox("Married", ["Yes", "No"])
+dependents = st.selectbox("Dependents", ["0", "1", "2", "3+"])
+education = st.selectbox("Education", ["Graduate", "Not Graduate"])
+self_employed = st.selectbox("Self Employed", ["Yes", "No"])
+applicant_income = st.number_input("Applicant Income", min_value=0)
+coapplicant_income = st.number_input("Coapplicant Income", min_value=0)
+loan_amount = st.number_input("Loan Amount", min_value=0)
+loan_term = st.number_input("Loan Amount Term", min_value=0)
+credit_history = st.selectbox("Credit History", [1, 0])
+property_area = st.selectbox("Property Area", ["Urban", "Semiurban", "Rural"])
 
-        return jsonify({
-            "prediction": result
-        })
+# ==============================
+# PREDICT
+# ==============================
 
-    except Exception as e:
-        return jsonify({"error": str(e)})
+if st.button("Predict"):
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    input_data = {
+        "Gender": gender,
+        "Married": married,
+        "Dependents": dependents,
+        "Education": education,
+        "Self_Employed": self_employed,
+        "ApplicantIncome": applicant_income,
+        "CoapplicantIncome": coapplicant_income,
+        "LoanAmount": loan_amount,
+        "Loan_Amount_Term": loan_term,
+        "Credit_History": credit_history,
+        "Property_Area": property_area
+    }
+
+    df = pd.DataFrame([input_data])
+
+    # Encode
+    for col in df.columns:
+        if col in encoders:
+            df[col] = encoders[col].transform(df[col])
+
+    prediction = model.predict(df)[0]
+
+    if prediction == 1:
+        st.success("Loan Approved")
+    else:
+        st.error("Loan Rejected")

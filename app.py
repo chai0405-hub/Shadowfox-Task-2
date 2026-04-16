@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
-import matplotlib.pyplot as plt
 
 # ==============================
 # PAGE CONFIG
@@ -26,7 +25,7 @@ st.markdown("<h1 style='text-align: center;'>Loan Approval Prediction</h1>", uns
 st.markdown("---")
 
 # ==============================
-# SIDEBAR (INFO PANEL)
+# SIDEBAR
 # ==============================
 st.sidebar.header("About")
 st.sidebar.info(
@@ -56,14 +55,14 @@ with col2:
 st.markdown("---")
 
 # ==============================
-# MODEL ACCURACY DISPLAY
+# MODEL ACCURACY
 # ==============================
 st.subheader("Model Performance")
-accuracy = 0.78  # replace with your actual printed accuracy
+accuracy = 0.78  # replace with your actual accuracy
 st.metric(label="Model Accuracy", value=f"{accuracy*100:.2f}%")
 
 # ==============================
-# PREDICT BUTTON
+# PREDICTION
 # ==============================
 if st.button("Predict Loan Status"):
 
@@ -96,16 +95,3 @@ if st.button("Predict Loan Status"):
         st.success("Loan Approved")
     else:
         st.error("Loan Rejected")
-
-    # ==============================
-    # CHART VISUALIZATION
-    # ==============================
-    st.subheader("Income Comparison")
-
-    fig, ax = plt.subplots()
-    ax.bar(["Applicant Income", "Coapplicant Income"], 
-           [applicant_income, coapplicant_income])
-    ax.set_ylabel("Amount")
-    ax.set_title("Income Distribution")
-
-    st.pyplot(fig)

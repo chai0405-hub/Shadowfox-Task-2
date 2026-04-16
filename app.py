@@ -6,7 +6,11 @@ import os
 # ==============================
 # PAGE CONFIG
 # ==============================
-st.set_page_config(page_title="Loan Approval Predictor", layout="wide")
+st.set_page_config(
+    page_title="Loan Approval Predictor",
+    page_icon="💰",
+    layout="wide"
+)
 
 # ==============================
 # LOAD MODEL
@@ -19,21 +23,38 @@ model = joblib.load(model_path)
 encoders = joblib.load(encoder_path)
 
 # ==============================
-# TITLE
+# HEADER
 # ==============================
-st.markdown("<h1 style='text-align: center;'>Loan Approval Prediction</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<h1 style='text-align: center; color: #4CAF50;'>Loan Approval Prediction</h1>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<p style='text-align: center;'>Enter applicant details to predict loan approval status</p>",
+    unsafe_allow_html=True
+)
+
 st.markdown("---")
 
 # ==============================
 # SIDEBAR
 # ==============================
-st.sidebar.header("About")
+st.sidebar.title("About")
 st.sidebar.info(
-    "This ML app predicts whether a loan will be approved based on applicant details."
+    """
+    This app uses Machine Learning to predict loan approval status.
+    
+    It considers factors like:
+    - Income
+    - Credit History
+    - Education
+    - Employment Status
+    """
 )
 
 # ==============================
-# INPUT FORM
+# INPUT SECTION
 # ==============================
 col1, col2 = st.columns(2)
 
@@ -82,9 +103,18 @@ if st.button("Predict Loan Status"):
 
     prediction = model.predict(df)[0]
 
-    st.subheader("Prediction Result")
+    st.markdown("## Prediction Result")
 
     if prediction == 1:
         st.success("Loan Approved")
     else:
         st.error("Loan Rejected")
+
+# ==============================
+# FOOTER
+# ==============================
+st.markdown("---")
+st.markdown(
+    "<p style='text-align: center;'>Built with Machine Learning & Streamlit</p>",
+    unsafe_allow_html=True
+)
